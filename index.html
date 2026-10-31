@@ -67,9 +67,9 @@ input[type=text],input[type=number]{min-width:130px}.stats{display:grid;grid-tem
 </section>
 <div class="stats">
 <div class="stat"><small>ጠቅላላ ሠራተኞች</small><strong id="total">0</strong></div>
-<div class="stat"><small>Present ምልክቶች</small><strong id="presentTotal">0</strong></div>
-<div class="stat"><small>Absent ምልክቶች</small><strong id="absentTotal">0</strong></div>
-<div class="stat"><small>Annual Leave ቀናት</small><strong id="leaveTotal">0</strong></div>
+<div class="stat"><small>Present</small><strong id="presentTotal">0</strong></div>
+<div class="stat"><small>Absent</small><strong id="absentTotal">0</strong></div>
+<div class="stat"><small>Annual Leave</small><strong id="leaveTotal">0</strong></div>
 </div>
 <section class="panel">
 <div class="controls" style="justify-content:space-between;margin-bottom:10px">
@@ -137,14 +137,14 @@ function save(){try{localStorage.setItem(key(),JSON.stringify(employees));publis
 function daysInMonth(){return periodDates().length}
 function render(){
 publishPresent();
-const dates=periodDates();const today=new Date();today.setHours(0,0,0,0);const [sy,sm]=$('month').value.split('-').map(Number);const end=new Date(sy,sm,23);$('monthTitle').textContent=`${fmtDate(dates[0])} – ${fmtDate(dates[dates.length-1])} (${dates.length} ቀናት)`;
+const dates=periodDates();const today=new Date();today.setHours(0,0,0,0);const todayKey=dateKey(today);const [sy,sm]=$('month').value.split('-').map(Number);$('monthTitle').textContent=`${fmtDate(dates[0])} – ${fmtDate(dates[dates.length-1])}`;
 const filter=$('departmentFilter')?.value||'*';const search=($('employeeSearch')?.value||'').trim().toLocaleLowerCase();const departments=[...new Set(employees.map(e=>(e.department||'General').trim()).filter(Boolean))].sort();if($('departmentFilter')){$('departmentFilter').innerHTML='<option value="*">ሁሉም Department</option>'+departments.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');$('departmentFilter').value=departments.includes(filter)||filter==='*'?filter:'*'}
 let html='<thead><tr><th class="idcol">ID</th><th class="namecol">Name</th><th>Department</th>';
 for(const dt of dates){const hd=new Date(dt);hd.setHours(0,0,0,0);if(!showPastDays&&hd.getTime()!==today.getTime())continue;const sunday=dt.getDay()===0;html+=`<th class="${sunday?'sunday':''}" title="${sunday?'እሁድ — Attendance Disabled':''}">${sunday?'🔴 ':''}${fmtDate(dt)}</th>`}
 html+='<th>Present</th><th>Absent</th><th>Annual Leave</th><th>Action</th></tr></thead><tbody>';
 let ptotal=0,atotal=0,ltotal=0;
-employees.forEach((e,i)=>{if(filter!=='*'&&(e.department||'General')!==filter)return;if(search&&!String(e.id).toLocaleLowerCase().includes(search)&&!String(e.name).toLocaleLowerCase().includes(search))return;let p=0,a=0,l=0;html+=`<tr><td>${esc(e.id)}</td><td><input class="employee-name" aria-label="ስም" data-name="${i}" value="${esc(e.name)}" ${currentRole!=='admin'?'readonly':''}></td><td><input class="department-input" aria-label="Department" data-department="${i}" value="${esc(e.department||'General')}" ${currentRole!=='admin'?'readonly':''}></td>`;
-for(const dt of dates){const dk=dateKey(dt);let v=e.days[dk]||'';const sunday=dt.getDay()===0;if(!sunday){if(v==='P')p++;if(v==='A')a++;if(v==='L')l++;}const cellDate=new Date(dt);cellDate.setHours(0,0,0,0);const past=cellDate.getTime()<today.getTime();const future=cellDate.getTime()>today.getTime();if(!showPastDays&&(past||future))continue;html+=`<td class="${sunday?'sunday-cell':''}"><button class="daybtn ${sunday?'off':v==='P'?'present':v==='A'?'absent':v==='L'?'leave':'off'}" data-date="${dk}" data-emp="${i}" ${(sunday||past&&currentRole!=='admin')?'disabled':''} title="${sunday?'እሁድ — Attendance መመዝገብ አይቻልም':dk+(past&&currentRole!=='admin'?' — User ላይ ያለፈ ቀን ተቆልፏል':past?' — Admin ያስተካክላል':future?' — ወደፊት ቀን፦ Annual Leave ብቻ ይፈቀዳል':' — Present/Absent/Annual Leave')}">${sunday?'🔒':v==='P'?'✓':v==='A'?'✗':v==='L'?'AL':'·'}</button></td>`}
+employees.forEach((e,i)=>{if(filter!=='*'&&(e.department||'General')!==filter)return;if(search&&!String(e.id).toLocaleLowerCase().includes(search)&&!String(e.name).toLocaleLowerCase().includes(search))return;const todayStatus=e.days[todayKey]||'';const p=todayStatus==='P'?1:0,a=todayStatus==='A'?1:0,l=todayStatus==='L'?1:0;html+=`<tr><td>${esc(e.id)}</td><td><input class="employee-name" aria-label="ስም" data-name="${i}" value="${esc(e.name)}" ${currentRole!=='admin'?'readonly':''}></td><td><input class="department-input" aria-label="Department" data-department="${i}" value="${esc(e.department||'General')}" ${currentRole!=='admin'?'readonly':''}></td>`;
+for(const dt of dates){const dk=dateKey(dt);let v=e.days[dk]||'';const sunday=dt.getDay()===0;const cellDate=new Date(dt);cellDate.setHours(0,0,0,0);const past=cellDate.getTime()<today.getTime();const future=cellDate.getTime()>today.getTime();if(!showPastDays&&(past||future))continue;html+=`<td class="${sunday?'sunday-cell':''}"><button class="daybtn ${sunday?'off':v==='P'?'present':v==='A'?'absent':v==='L'?'leave':'off'}" data-date="${dk}" data-emp="${i}" ${(sunday||past&&currentRole!=='admin')?'disabled':''} title="${sunday?'እሁድ — Attendance መመዝገብ አይቻልም':dk+(past&&currentRole!=='admin'?' — User ላይ ያለፈ ቀን ተቆልፏል':past?' — Admin ያስተካክላል':future?' — ወደፊት ቀን፦ Annual Leave ብቻ ይፈቀዳል':' — Present/Absent/Annual Leave')}">${sunday?'🔒':v==='P'?'✓':v==='A'?'✗':v==='L'?'AL':'·'}</button></td>`}
 ptotal+=p;atotal+=a;ltotal+=l;html+=`<td class="summary">${p}</td><td class="summary">${a}</td><td class="summary">${l}</td><td>${currentRole==='admin'?`<button class="danger" data-delete="${i}">ሰርዝ</button>`:'—'}</td></tr>`});
 if(!employees.length)html+=`<tr><td colspan="${dates.length+6}">ሠራተኛ አልተጨመረም</td></tr>`;else if(!html.includes('<tr><td>'))html+=`<tr><td colspan="${dates.length+6}">ከዚህ ፍለጋ / Department ጋር የሚዛመድ ሠራተኛ የለም</td></tr>`;
 html+='</tbody>';$('attendance').innerHTML=html;$('total').textContent=employees.length;$('presentTotal').textContent=ptotal;$('absentTotal').textContent=atotal;if($('leaveTotal'))$('leaveTotal').textContent=ltotal;
